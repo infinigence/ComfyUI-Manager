@@ -537,7 +537,8 @@ def install(
     env_var = os.getenv('COMFY_MANAGER_INSTALL_EXIT_ON_FAIL')
     if env_var is not None:
         print(f"read os env:COMFY_MANAGER_INSTALL_EXIT_ON_FAIL: {env_var}")
-        if (env_var.lower() == 'true'):
+        enable_list = ['true', '1', 'on', 'yes']
+        if env_var.lower() in enable_list:
             exit_on_fail = True
 
     for_each_nodes(nodes, act=install_node, exit_on_fail=exit_on_fail)
