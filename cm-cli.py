@@ -183,26 +183,39 @@ class Ctx:
 
 cmd_ctx = Ctx()
 
+# use '@@' to separate node name and commit id
+def parse_node(node: str):
+    if '@@' in node:
+        name, commit = node.split('@@', 1)
+    else:
+        name, commit = node, None
+    return name, commit
+
 
 def install_node(node_spec_str, is_all=False, cnt_msg='', **kwargs):
+    _, commit_id = parse_node(node_spec_str)
+    
     exit_on_fail = kwargs.get('exit_on_fail', False)
     print(f"install_node exit on fail:{exit_on_fail}...")
     
     if core.is_valid_url(node_spec_str):
         # install via urls
-        res = asyncio.run(core.gitclone_install(node_spec_str, no_deps=cmd_ctx.no_deps))
+        res = asyncio.run(core.gitclone_install(node_spec_str, no_deps=cmd_ctx.no_deps, commit_id=commit_id))
         if not res.result:
             print(res.msg)
             print(f"[bold red]ERROR: An error occurred while installing '{node_spec_str}'.[/bold red]")
             if exit_on_fail:
                 sys.exit(1)
         else:
-            print(f"{cnt_msg} [INSTALLED] {node_spec_str:50}")
+            print(f"{cnt_msg} [INSTALLED] {node_spec_str:50} => {commit_id}")
     else:
         node_spec = unified_manager.resolve_node_spec(node_spec_str)
 
         if node_spec is None:
-            return
+            if exit_on_fail:
+                sys.exit(1)
+            else:
+                return
 
         node_name, version_spec, is_specified = node_spec
 
@@ -210,7 +223,7 @@ def install_node(node_spec_str, is_all=False, cnt_msg='', **kwargs):
         if not is_specified:
             version_spec = None
 
-        res = asyncio.run(unified_manager.install_by_id(node_name, version_spec, cmd_ctx.channel, cmd_ctx.mode, instant_execution=True, no_deps=cmd_ctx.no_deps))
+        res = asyncio.run(unified_manager.install_by_id(node_name, version_spec, cmd_ctx.channel, cmd_ctx.mode, instant_execution=True, no_deps=cmd_ctx.no_deps, commit_id=commit_id))
 
         if res.action == 'skip':
             print(f"{cnt_msg} [   SKIP  ] {node_name:50} => Already installed")
